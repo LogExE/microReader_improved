@@ -36,7 +36,7 @@ void ReaderModeFileRead::tick() {
     }
     if (eq.ok.click()) {
       enterFile();
-    } else if (eq.up.click() && cursor != fileCnt - 1) {
+    } else if (eq.up.click() && cursor <= fileCnt - 1) {
       cursor++;
       drawMenu();
     } else if (eq.down.click() && cursor > 0) {
@@ -86,15 +86,19 @@ void ReaderModeFileRead::exitFile() {
 void ReaderModeFileRead::drawMenu() {
   eq.oled.clear(0, 16, 127, 63);
   eq.oled.setCursor(0, SLINE);
-  int from = cursor - cursor % FILES_ON_PAGE;
-  for (int i = 0; i < FILES_ON_PAGE; ++i) {
-    if (cursor == i)
-      eq.oled.print("* ");
-    else
-      eq.oled.print("  ");
-    eq.oled.println(fileNames[from + i]);
-    if (from + i == fileCnt - 1)
-      break;
+  if (fileCnt == 0) {
+    eq.oled.println("-empty-");
+  } else {
+    int from = cursor - cursor % FILES_ON_PAGE;
+    for (int i = 0; i < FILES_ON_PAGE; ++i) {
+      if (cursor == i)
+        eq.oled.print("* ");
+      else
+        eq.oled.print("  ");
+      eq.oled.println(fileNames[from + i]);
+      if (from + i == fileCnt - 1)
+        break;
+    }
   }
   eq.oled.update(0, 16, 127, 63);
 }
