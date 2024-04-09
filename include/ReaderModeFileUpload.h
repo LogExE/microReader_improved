@@ -7,6 +7,6 @@ class ReaderModeFileUpload : public ReaderMode {
   ReaderModeFileUpload(ReaderEquipment &eq, ReaderSettings &sets);
 
   void start();
-  
   void tick();
+  void suspend();
 };

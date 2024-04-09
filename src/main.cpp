@@ -4,10 +4,8 @@
 #include <Wire.h>     // Либа I2C
 
 #include "ReaderEquipment.h"
+#include "ReaderModeManager.h"
 #include "ReaderSettings.h"
-
-#include "ReaderModeFileRead.h"
-#include "ReaderModeFileUpload.h"
 
 #define AP_DEFAULT_SSID "ReAdEr"
 #define AP_DEFAULT_PASS "00000000"
@@ -44,13 +42,11 @@ ReaderEquipment eq = {GyverPortal(&LittleFS), GyverOLED<SSD1306_128x64>(0x3C),
                       ButtonT<OK_BTN_PIN>(INPUT_PULLUP),
                       ButtonT<DWN_BTN_PIN>(INPUT_PULLUP)};
 
-ReaderModeFileRead files(eq, settings);
-
 ADC_MODE(ADC_VCC); // Режим работы АЦП - измерение VCC
 
 void initOled() {
-  eq.oled.autoPrintln(true);
   eq.oled.init(IIC_SDA_PIN, IIC_SCL_PIN); // Инициализация оледа
+  eq.oled.autoPrintln(true);
   eq.oled.clear();                        // Очистка оледа
   eq.oled.update(); // Вывод пустой картинки
 }
@@ -65,6 +61,8 @@ void eepromInit() {
     EEPROM.get(1, settings); // Читаем настройки
   }
 }
+
+ReaderModeManager modeMan(eq, settings);
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);     // Пара подмигиваний
@@ -89,8 +87,7 @@ void setup() {
       translateContrast(settings.dispContrast)); // Тут же задаем яркость оледа
 
   batMV = ESP.getVcc(); // Читаем напряжение питания
-
-  files.start();
+  modeMan.start();
 }
 
 void loop() {
@@ -98,5 +95,5 @@ void loop() {
   eq.ok.tick();
   eq.down.tick();
 
-  files.tick();
+  modeMan.tick();
 }

@@ -34,13 +34,14 @@ void ReaderModeFileRead::tick() {
       if (statusFirst)
         statusFirst = false;
     }
+    
     if (eq.ok.click()) {
       enterFile();
-    } else if (eq.up.click() && cursor <= fileCnt - 1) {
-      cursor++;
-      drawMenu();
-    } else if (eq.down.click() && cursor > 0) {
+    } else if (eq.up.click() && cursor > 0) {
       cursor--;
+      drawMenu();
+    } else if (eq.down.click() && cursor < fileCnt - 1) {
+      cursor++;
       drawMenu();
     }
   } else {
@@ -48,10 +49,10 @@ void ReaderModeFileRead::tick() {
       exitFile();
     }
     if (curState == READ_TEXT) {
-      if (eq.up.click() && curPage != 0) {
+      if (eq.up.click() && curPage > 0) {
         curPage--;
         drawText();
-      } else if (eq.down.click() && curPage != lastPage) {
+      } else if (eq.down.click() && curPage < lastPage - 1) {
         curPage++;
         drawText();
       }
@@ -60,26 +61,39 @@ void ReaderModeFileRead::tick() {
   }
 }
 
+void ReaderModeFileRead::suspend() {
+  if (curState != MENU) {
+    curFile.close();
+  }
+}
+
 void ReaderModeFileRead::enterFile() {
   String name = fileNames[cursor];
-  curFile = LittleFS.open(name, "r");
+  curFile = LittleFS.open(FOLDER_ROOT "/" + name, "r");
   if (name.endsWith(textRes)) {
     txtPageStartByte[0] = 0;
     curPage = 0;
+    lastPage = MAX_TEXT_PAGES;
+    
     curState = READ_TEXT;
+    
     drawText();
   } else if (name.endsWith(picRes)) {
     curState = READ_PIC;
+    
     drawPic();
   } else {
     eq.oled.println("WTF");
+    eq.oled.update();
   }
 }
 
 void ReaderModeFileRead::exitFile() {
   curFile.close();
+  
   curState = MENU;
   drawMenu();
+  
   batTimer = STATUS_TIMEMIN;
 }
 
@@ -91,10 +105,11 @@ void ReaderModeFileRead::drawMenu() {
   } else {
     int from = cursor - cursor % FILES_ON_PAGE;
     for (int i = 0; i < FILES_ON_PAGE; ++i) {
-      if (cursor == i)
-        eq.oled.print("* ");
-      else
-        eq.oled.print("  ");
+      if (cursor == i) {
+        eq.oled.print("*");
+      } else {
+        eq.oled.print(" ");
+      }
       eq.oled.println(fileNames[from + i]);
       if (from + i == fileCnt - 1)
         break;
@@ -106,35 +121,17 @@ void ReaderModeFileRead::drawMenu() {
 void ReaderModeFileRead::drawText() {
   eq.oled.clear();
   eq.oled.home();
-  int curLine = 0;
-  int curCol = 0;
+
+  curFile.seek(txtPageStartByte[curPage]);
+  
   int soughtBs = 0;
-  curFile.seek(txtPageStartByte[curPage], SeekSet);
-  while (curFile.available()) {
+  while (curFile.available() && !eq.oled.isEnd()) {
     ++soughtBs;
     char b = curFile.read();
-    if (b == '\n') {
-      curCol = 21;
-    } else if (b == '\r') {
-      // bruh
-    } else {
-      eq.oled.print(b);
-      curCol++;
-    }
-
-    // строка переполнилась
-    if (curCol == 21) {
-      curLine++;
-      curCol = 0;
-      // страница прочтена
-      if (curLine == 8) {
-        break;
-      }
-      eq.oled.setCursor(curCol, curLine);
-    }
+    eq.oled.write(b);
   }
   if (curPage < MAX_TEXT_PAGES - 1) {
-    txtPageStartByte[curPage + 1] = soughtBs;
+    txtPageStartByte[curPage + 1] = txtPageStartByte[curPage] + soughtBs;
   }
   if (!curFile.available()) {
     lastPage = curPage;

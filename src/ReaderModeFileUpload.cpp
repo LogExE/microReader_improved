@@ -15,6 +15,23 @@ void build() {
   GP.BUILD_END();
 }
 
+/*
+void action(GyverPortal& p) {       // Подсос значений со страницы
+  if (p.form("/cfg")) {             // Если есть сабмит формы - копируем все в переменные
+    p.copyStr("apSsid", sets.apSsid);
+    p.copyStr("apPass", sets.apPass);
+    p.copyStr("staSsid", sets.staSsid);
+    p.copyStr("staPass", sets.staPass);
+    p.copyBool("staEn", sets.staModeEn);
+
+    byte con = map(sets.dispContrast, 10, 100, 1, 255);
+    oled.setContrast(con);         // Тут же задаем яркость оледа
+    EEPROM.put(1, sets);           // Сохраняем все настройки в EEPROM
+    EEPROM.commit();               // Записываем
+  }
+}
+*/
+
 ReaderModeFileUpload::ReaderModeFileUpload(ReaderEquipment &eq,
                                            ReaderSettings &sets)
     : ReaderMode(eq, sets) {}
@@ -22,8 +39,9 @@ ReaderModeFileUpload::ReaderModeFileUpload(ReaderEquipment &eq,
 void ReaderModeFileUpload::start() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(sets.staSSID, sets.staPass);
+  eq.oled.clear();
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    delay(1000);
     eq.oled.print(".");
     eq.oled.update();
   }
@@ -38,6 +56,8 @@ void ReaderModeFileUpload::start() {
 
 void ReaderModeFileUpload::tick() {
   eq.ui.tick();
-  if (eq.up.pressing() && eq.down.pressing() && eq.ok.pressing())
-    ;
+}
+
+void ReaderModeFileUpload::suspend() {
+  WiFi.mode(WIFI_OFF);
 }

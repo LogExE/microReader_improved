@@ -10,6 +10,7 @@ class ReaderMode {
   ReaderMode(ReaderEquipment &eq, ReaderSettings &sets);
   virtual void start() = 0;
   virtual void tick() = 0;
+  virtual void suspend() = 0;
   
  protected:
   ReaderEquipment &eq;

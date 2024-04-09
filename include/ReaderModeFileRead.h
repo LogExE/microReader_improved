@@ -29,8 +29,8 @@ public:
 
   // перменные, валидные при просмотре текста
   int txtPageStartByte[MAX_TEXT_PAGES];
-  int curPage = 0;
-  int lastPage = MAX_TEXT_PAGES;
+  int curPage;
+  int lastPage;
 
   File curFile;
 
@@ -39,16 +39,13 @@ public:
   bool statusFirst = true;
 
   void start();
-
   void tick();
+  void suspend();
 
   void enterFile();
-
   void exitFile();
 
   void drawMenu();
-
   void drawText();
-
   void drawPic();
 };
