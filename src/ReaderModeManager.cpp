@@ -44,7 +44,7 @@ void ReaderModeManager::tick() {
     if (eq.ok.click()) {
       curMode = stToMode();
       curMode->start();
-    } else if (eq.down.click() && chState != CH_STATE_LAST) {
+    } else if (eq.down.click() && chState < CH_STATE_LAST - 1) {
       chState += 1;
       drawMode();
     } else if (eq.up.click() && chState > 0) {

@@ -52,7 +52,7 @@ void ReaderModeFileRead::tick() {
       if (eq.up.click() && curPage > 0) {
         curPage--;
         drawText();
-      } else if (eq.down.click() && curPage < lastPage - 1) {
+      } else if (eq.down.click() && curPage < lastPage) {
         curPage++;
         drawText();
       }
@@ -128,8 +128,13 @@ void ReaderModeFileRead::drawText() {
   while (curFile.available() && !eq.oled.isEnd()) {
     ++soughtBs;
     char b = curFile.read();
+    if (b == '\n') {
+      eq.oled.write('\r');
+      //      eq.oled.write('\n');
+    }
     eq.oled.write(b);
   }
+
   if (curPage < MAX_TEXT_PAGES - 1) {
     txtPageStartByte[curPage + 1] = txtPageStartByte[curPage] + soughtBs;
   }

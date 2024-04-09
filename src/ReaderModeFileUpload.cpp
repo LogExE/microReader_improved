@@ -37,15 +37,24 @@ ReaderModeFileUpload::ReaderModeFileUpload(ReaderEquipment &eq,
     : ReaderMode(eq, sets) {}
 
 void ReaderModeFileUpload::start() {
+  eq.oled.clear();
+  eq.oled.home();
+  eq.oled.print("SSID: ");
+  eq.oled.println(sets.staSSID);
+  eq.oled.update();
+  
   WiFi.mode(WIFI_STA);
   WiFi.begin(sets.staSSID, sets.staPass);
-  eq.oled.clear();
+
+  eq.oled.print("Connecting");
   while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
+    delay(1500);
     eq.oled.print(".");
     eq.oled.update();
   }
+  
   eq.oled.println();
+  eq.oled.print("IP: ");
   eq.oled.println(WiFi.localIP());
   eq.oled.update();
 
