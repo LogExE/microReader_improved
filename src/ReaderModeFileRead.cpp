@@ -5,6 +5,8 @@
 extern ReaderEquipment eq;
 extern ReaderSettings sets;
 
+extern uint32_t batTimer;
+
 const static int FILES_ON_PAGE = 6;
 const static int SLINE = 2;
 
@@ -31,15 +33,16 @@ int lastPage;
 
 File curFile;
 
-uint32_t batTimer = STATUS_TIMEMIN; // Таймер опроса АКБ
-String status = "";
-bool statusFirst = true;
-
 void drawMenu();
+void drawStatus();
+
 void drawText();
 void drawPic();
+
 void enterFile();
 void exitFile();
+
+String readModeStr = "READING MODE";
 
 void RMFileReadStart() {
   // заполняем инфу о файлах в файловой системе
@@ -55,21 +58,16 @@ void RMFileReadStart() {
   // пока что только в меню
   curState = MENU;
 
+  drawStatus(readModeStr);
   drawMenu();
 }
 
 void RMFileReadTick() {
   if (curState == MENU) {
     unsigned long mi = millis();
-    if (statusFirst || mi - batTimer >= STATUSBAR_TIME) {
-      eq.oled.clear(0, 0, 127, 15);
-      eq.oled.home();
-      eq.oled.println(millis());
-      eq.oled.line(0, 10, 127, 10);
-      eq.oled.update(0, 0, 127, 15);
+    if (mi - batTimer >= STATUSBAR_TIME) {
+      drawStatus(readModeStr);
       batTimer = mi;
-      if (statusFirst)
-        statusFirst = false;
     }
     
     if (eq.ok.click()) {
@@ -86,10 +84,10 @@ void RMFileReadTick() {
       exitFile();
     }
     if (curState == READ_TEXT) {
-      if (eq.up.click() && curPage > 0) {
+      if ((eq.up.click() || eq.up.holding()) && curPage > 0) {
         curPage--;
         drawText();
-      } else if (eq.down.click() && curPage < lastPage) {
+      } else if ((eq.down.click() || eq.down.holding()) && curPage < lastPage) {
         curPage++;
         drawText();
       }

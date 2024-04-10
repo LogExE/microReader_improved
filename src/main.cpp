@@ -42,6 +42,8 @@ ReaderSettings sets = { // Структура со всеми настройка
 
 int batMV = 3000; // Напряжение питания ESP
 
+uint32_t batTimer = STATUS_TIMEMIN; // Таймер опроса АКБ
+
 int translateContrast(byte x) { return map(x, 10, 100, 1, 255); }
 
 ADC_MODE(ADC_VCC); // Режим работы АЦП - измерение VCC
@@ -144,14 +146,6 @@ ReaderMode* stToMode() {
 
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(1000);
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(500);
-  digitalWrite(LED_BUILTIN, LOW);
-  pinMode(LED_BUILTIN, INPUT); // Выключаем и продолжаем
-
   eq.ok.setHoldTimeout(1500); // Длинное удержание кнопки ОК - 1.5 секунды
 
   initOled();
@@ -164,6 +158,14 @@ void setup() {
       translateContrast(sets.dispContrast)); // Тут же задаем яркость оледа
 
   batMV = ESP.getVcc(); // Читаем напряжение питания
+
+  eq.oled.println("microReader improved");
+  eq.oled.println();
+  eq.oled.println("enjoy :)");
+  eq.oled.update();
+
+  delay(2000);
+  
   ReaderStart();
 }
 

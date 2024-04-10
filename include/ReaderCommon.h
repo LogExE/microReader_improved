@@ -9,3 +9,5 @@
 #define STATUS_TIMEMIN 0
 #define WIFI_TIMEOUT_S 300 // Таймаут на отключение Wi-Fi (С)
 #define FOLDER_ROOT "/rdrfls"
+
+void drawStatus(String str);
