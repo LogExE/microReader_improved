@@ -4,8 +4,10 @@
 #include <Wire.h>     // Либа I2C
 
 #include "ReaderEquipment.h"
-#include "ReaderModeManager.h"
 #include "ReaderSettings.h"
+
+#include "ReaderModeFileRead.h"
+#include "ReaderModeFileUpload.h"
 
 #define AP_DEFAULT_SSID "ReAdEr"
 #define AP_DEFAULT_PASS "00000000"
@@ -22,7 +24,12 @@
 #define EEPROM_SIZE 100
 #define UNLOCK_PASS "000012"
 
-ReaderSettings settings = { // Структура со всеми настройками
+ReaderEquipment eq = {GyverPortal(&LittleFS), GyverOLED<SSD1306_128x64>(0x3C),
+                      ButtonT<UP_BTN_PIN>(INPUT_PULLUP),
+                      ButtonT<OK_BTN_PIN>(INPUT_PULLUP),
+                      ButtonT<DWN_BTN_PIN>(INPUT_PULLUP)};
+
+ReaderSettings sets = { // Структура со всеми настройками
     AP_DEFAULT_SSID,  AP_DEFAULT_PASS,
 
     STA_DEFAULT_SSID, STA_DEFAULT_PASS,
@@ -37,11 +44,6 @@ int batMV = 3000; // Напряжение питания ESP
 
 int translateContrast(byte x) { return map(x, 10, 100, 1, 255); }
 
-ReaderEquipment eq = {GyverPortal(&LittleFS), GyverOLED<SSD1306_128x64>(0x3C),
-                      ButtonT<UP_BTN_PIN>(INPUT_PULLUP),
-                      ButtonT<OK_BTN_PIN>(INPUT_PULLUP),
-                      ButtonT<DWN_BTN_PIN>(INPUT_PULLUP)};
-
 ADC_MODE(ADC_VCC); // Режим работы АЦП - измерение VCC
 
 void initOled() {
@@ -55,23 +57,98 @@ void eepromInit() {
   EEPROM.begin(EEPROM_SIZE); // Инициализация EEPROM
   if (EEPROM.read(0) != EE_KEY) { // Если ключ еепром не совпадает
     EEPROM.write(0, EE_KEY); // Пишем ключ
-    EEPROM.put(1, settings); // Пишем дефолтные настройки
+    EEPROM.put(1, sets); // Пишем дефолтные настройки
     EEPROM.commit();         // Запись
   } else {                   // Если ключ совпадает
-    EEPROM.get(1, settings); // Читаем настройки
+    EEPROM.get(1, sets); // Читаем настройки
   }
 }
 
-ReaderModeManager modeMan(eq, settings);
+#define CH_STATE_READ 0
+#define CH_STATE_UPLOAD 1
+#define CH_STATE_LAST 2
+
+ReaderMode *curMode;
+ReaderMode fileRead = {
+  RMFileReadStart,
+  RMFileReadTick,
+  RMFileReadSuspend
+};
+ReaderMode fileUpload = {
+  RMFileUploadStart,
+  RMFileUploadTick,
+  RMFileUploadSuspend
+};
+int chState;
+
+void drawMode();
+ReaderMode *stToMode();
+
+void ReaderStart() {
+  curMode = NULL;
+  chState = CH_STATE_READ;
+  
+  drawMode();
+}
+
+void ReaderTick() {
+  if (curMode == NULL) {
+    if (eq.ok.click()) {
+      curMode = stToMode();
+      curMode->start();
+    } else if (eq.down.click() && chState < CH_STATE_LAST - 1) {
+      chState += 1;
+      drawMode();
+    } else if (eq.up.click() && chState > 0) {
+      chState -= 1;
+      drawMode();
+    }
+  } else {
+    if (eq.up.holding() && eq.down.holding() && eq.ok.holding()) {
+      curMode->suspend();
+      curMode = NULL;
+      drawMode();
+    } else {
+      curMode->tick();
+    }
+  }
+}
+
+void drawMode() {
+    eq.oled.clear();
+    eq.oled.home();
+    switch (chState) {
+    case CH_STATE_READ:
+      eq.oled.println("read files");
+      break;
+    case CH_STATE_UPLOAD:
+      eq.oled.println("upload files");
+      break;
+    default:
+      //bruh
+      break;
+    }
+    eq.oled.update();
+}
+
+ReaderMode* stToMode() {
+  switch (chState) {
+    case CH_STATE_READ:
+      return &fileRead;
+    case CH_STATE_UPLOAD:
+      return &fileUpload;
+    default:
+      return NULL;
+    }
+}
+
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);     // Пара подмигиваний
-  for (uint8_t i = 0; i < 6; i++) { // Для индикации запуска
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(30);
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(30);
-  }
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(1000);
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(500);
   digitalWrite(LED_BUILTIN, LOW);
   pinMode(LED_BUILTIN, INPUT); // Выключаем и продолжаем
 
@@ -84,10 +161,10 @@ void setup() {
   eepromInit();
 
   eq.oled.setContrast(
-      translateContrast(settings.dispContrast)); // Тут же задаем яркость оледа
+      translateContrast(sets.dispContrast)); // Тут же задаем яркость оледа
 
   batMV = ESP.getVcc(); // Читаем напряжение питания
-  modeMan.start();
+  ReaderStart();
 }
 
 void loop() {
@@ -95,5 +172,5 @@ void loop() {
   eq.ok.tick();
   eq.down.tick();
 
-  modeMan.tick();
+  ReaderTick();
 }

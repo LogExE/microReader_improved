@@ -3,6 +3,9 @@
 #include <ESP8266WiFi.h>
 #include <LittleFS.h>
 
+extern ReaderEquipment eq;
+extern ReaderSettings sets;
+
 // конструктор страницы
 void build() {
   GP.BUILD_BEGIN();
@@ -32,11 +35,7 @@ void action(GyverPortal& p) {       // Подсос значений со стр
 }
 */
 
-ReaderModeFileUpload::ReaderModeFileUpload(ReaderEquipment &eq,
-                                           ReaderSettings &sets)
-    : ReaderMode(eq, sets) {}
-
-void ReaderModeFileUpload::start() {
+void RMFileUploadStart() {
   eq.oled.clear();
   eq.oled.home();
   eq.oled.print("SSID: ");
@@ -63,10 +62,10 @@ void ReaderModeFileUpload::start() {
   eq.ui.start();
 }
 
-void ReaderModeFileUpload::tick() {
+void RMFileUploadTick() {
   eq.ui.tick();
 }
 
-void ReaderModeFileUpload::suspend() {
+void RMFileUploadSuspend() {
   WiFi.mode(WIFI_OFF);
 }

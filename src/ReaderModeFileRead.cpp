@@ -1,10 +1,47 @@
 #include "ReaderModeFileRead.h"
 
-ReaderModeFileRead::ReaderModeFileRead(ReaderEquipment &eq,
-                                       ReaderSettings &sets)
-    : ReaderMode(eq, sets) {}
+#include <LittleFS.h>
 
-void ReaderModeFileRead::start() {
+extern ReaderEquipment eq;
+extern ReaderSettings sets;
+
+const static int FILES_ON_PAGE = 6;
+const static int SLINE = 2;
+
+const static int BYTES_IN_PIC = 8 * 128; // 8 строк по 128 байт
+
+const static int MAX_FILES = 100;
+
+const static int MAX_TEXT_PAGES = 100;
+
+constexpr static const char *picRes = ".pic";
+constexpr static const char *textRes = ".txt";
+
+enum State { READ_TEXT, READ_PIC, MENU } curState;
+
+// переменные состояния меню
+String fileNames[MAX_FILES];
+int fileCnt;
+int cursor;
+
+// перменные, валидные при просмотре текста
+int txtPageStartByte[MAX_TEXT_PAGES];
+int curPage;
+int lastPage;
+
+File curFile;
+
+uint32_t batTimer = STATUS_TIMEMIN; // Таймер опроса АКБ
+String status = "";
+bool statusFirst = true;
+
+void drawMenu();
+void drawText();
+void drawPic();
+void enterFile();
+void exitFile();
+
+void RMFileReadStart() {
   // заполняем инфу о файлах в файловой системе
   Dir root = LittleFS.openDir(FOLDER_ROOT);
   fileCnt = 0;
@@ -21,7 +58,7 @@ void ReaderModeFileRead::start() {
   drawMenu();
 }
 
-void ReaderModeFileRead::tick() {
+void RMFileReadTick() {
   if (curState == MENU) {
     unsigned long mi = millis();
     if (statusFirst || mi - batTimer >= STATUSBAR_TIME) {
@@ -61,13 +98,13 @@ void ReaderModeFileRead::tick() {
   }
 }
 
-void ReaderModeFileRead::suspend() {
+void RMFileReadSuspend() {
   if (curState != MENU) {
     curFile.close();
   }
 }
 
-void ReaderModeFileRead::enterFile() {
+void enterFile() {
   String name = fileNames[cursor];
   curFile = LittleFS.open(FOLDER_ROOT "/" + name, "r");
   if (name.endsWith(textRes)) {
@@ -88,7 +125,7 @@ void ReaderModeFileRead::enterFile() {
   }
 }
 
-void ReaderModeFileRead::exitFile() {
+void exitFile() {
   curFile.close();
   
   curState = MENU;
@@ -97,7 +134,7 @@ void ReaderModeFileRead::exitFile() {
   batTimer = STATUS_TIMEMIN;
 }
 
-void ReaderModeFileRead::drawMenu() {
+void drawMenu() {
   eq.oled.clear(0, 16, 127, 63);
   eq.oled.setCursor(0, SLINE);
   if (fileCnt == 0) {
@@ -118,7 +155,7 @@ void ReaderModeFileRead::drawMenu() {
   eq.oled.update(0, 16, 127, 63);
 }
 
-void ReaderModeFileRead::drawText() {
+void drawText() {
   eq.oled.clear();
   eq.oled.home();
 
@@ -144,7 +181,7 @@ void ReaderModeFileRead::drawText() {
   eq.oled.update();
 }
 
-void ReaderModeFileRead::drawPic() {
+void drawPic() {
   eq.oled.clear();
   eq.oled.home();
   char picBytes[BYTES_IN_PIC];

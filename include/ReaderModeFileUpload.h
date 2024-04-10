@@ -2,11 +2,6 @@
 
 #include "ReaderMode.h"
 
-class ReaderModeFileUpload : public ReaderMode {
-  public:
-  ReaderModeFileUpload(ReaderEquipment &eq, ReaderSettings &sets);
-
-  void start();
-  void tick();
-  void suspend();
-};
+void RMFileUploadStart();
+void RMFileUploadTick();
+void RMFileUploadSuspend();
