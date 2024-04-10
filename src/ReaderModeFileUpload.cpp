@@ -73,8 +73,6 @@ void printNetInfo() {
   if (sets.staModeFlag) {
     eq.oled.print("SSID: ");
     eq.oled.println(sets.staSSID);
-    eq.oled.print("PASS: ");
-    eq.oled.println(sets.staPass);
   } else {
     eq.oled.print("AP SSID: ");
     eq.oled.println(sets.apSSID);
@@ -107,8 +105,6 @@ void RMFileUploadStart() {
     eq.oled.println("Connecting");
     eq.oled.print("SSID: ");
     eq.oled.println(sets.staSSID);
-    eq.oled.print("PASS: ");
-    eq.oled.println(sets.staPass);
     eq.oled.update();
 
     WiFi.mode(WIFI_STA);
