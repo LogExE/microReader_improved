@@ -3,6 +3,7 @@
 #include <LittleFS.h> // Либа файловой системы
 #include <Wire.h>     // Либа I2C
 
+#include "ReaderCommon.h"
 #include "ReaderEquipment.h"
 #include "ReaderSettings.h"
 
@@ -18,16 +19,19 @@
 
 #define IIC_SDA_PIN 4
 #define IIC_SCL_PIN 5
-#define EE_KEY 0x10
+#define EE_KEY 0x42
 #define _EB_DEB 25
 #define SCR_CONTRAST 100
-#define EEPROM_SIZE 100
+#define EEPROM_SIZE 125
 #define UNLOCK_PASS "000012"
 
-ReaderEquipment eq = {GyverPortal(&LittleFS), GyverOLED<SSD1306_128x64>(0x3C),
-                      ButtonT<UP_BTN_PIN>(INPUT_PULLUP),
-                      ButtonT<OK_BTN_PIN>(INPUT_PULLUP),
-                      ButtonT<DWN_BTN_PIN>(INPUT_PULLUP)};
+ReaderEquipment eq = {
+  GyverPortal(&LittleFS),
+  GyverOLED<SSD1306_128x64>(0x3C),
+  ButtonT<UP_BTN_PIN>(INPUT_PULLUP),
+  ButtonT<OK_BTN_PIN>(INPUT_PULLUP),
+  ButtonT<DWN_BTN_PIN>(INPUT_PULLUP)
+};
 
 ReaderSettings sets = { // Структура со всеми настройками
     AP_DEFAULT_SSID,  AP_DEFAULT_PASS,
@@ -43,8 +47,6 @@ ReaderSettings sets = { // Структура со всеми настройка
 int batMV = 3000; // Напряжение питания ESP
 
 uint32_t batTimer = STATUS_TIMEMIN; // Таймер опроса АКБ
-
-int translateContrast(byte x) { return map(x, 10, 100, 1, 255); }
 
 ADC_MODE(ADC_VCC); // Режим работы АЦП - измерение VCC
 
@@ -66,84 +68,21 @@ void eepromInit() {
   }
 }
 
-#define CH_STATE_READ 0
-#define CH_STATE_UPLOAD 1
-#define CH_STATE_LAST 2
+int curMode;
+bool choosing;
 
-ReaderMode *curMode;
-ReaderMode fileRead = {
-  RMFileReadStart,
-  RMFileReadTick,
-  RMFileReadSuspend
+ReaderMode readerModes[] = {
+    {RMFileReadStart, RMFileReadTick, RMFileReadSuspend},
+    {RMFileUploadStart, RMFileUploadTick, RMFileUploadSuspend}
 };
-ReaderMode fileUpload = {
-  RMFileUploadStart,
-  RMFileUploadTick,
-  RMFileUploadSuspend
-};
-int chState;
+int modeCount = sizeof(readerModes) / sizeof(readerModes[0]);
+
+String modeNames[] = {"read files", "upload files"};
 
 void drawMode();
-ReaderMode *stToMode();
 
-void ReaderStart() {
-  curMode = NULL;
-  chState = CH_STATE_READ;
-  
-  drawMode();
-}
-
-void ReaderTick() {
-  if (curMode == NULL) {
-    if (eq.ok.click()) {
-      curMode = stToMode();
-      curMode->start();
-    } else if (eq.down.click() && chState < CH_STATE_LAST - 1) {
-      chState += 1;
-      drawMode();
-    } else if (eq.up.click() && chState > 0) {
-      chState -= 1;
-      drawMode();
-    }
-  } else {
-    if (eq.up.holding() && eq.down.holding() && eq.ok.holding()) {
-      curMode->suspend();
-      curMode = NULL;
-      drawMode();
-    } else {
-      curMode->tick();
-    }
-  }
-}
-
-void drawMode() {
-    eq.oled.clear();
-    eq.oled.home();
-    switch (chState) {
-    case CH_STATE_READ:
-      eq.oled.println("read files");
-      break;
-    case CH_STATE_UPLOAD:
-      eq.oled.println("upload files");
-      break;
-    default:
-      //bruh
-      break;
-    }
-    eq.oled.update();
-}
-
-ReaderMode* stToMode() {
-  switch (chState) {
-    case CH_STATE_READ:
-      return &fileRead;
-    case CH_STATE_UPLOAD:
-      return &fileUpload;
-    default:
-      return NULL;
-    }
-}
-
+void ReaderStart();
+void ReaderTick();
 
 void setup() {
   eq.ok.setHoldTimeout(1500); // Длинное удержание кнопки ОК - 1.5 секунды
@@ -175,4 +114,41 @@ void loop() {
   eq.down.tick();
 
   ReaderTick();
+}
+
+void ReaderStart() {
+  curMode = 0;
+  choosing = true;
+  
+  drawMode();
+}
+
+void ReaderTick() {
+  if (choosing) {
+    if (eq.ok.click()) {
+      choosing = false;
+      readerModes[curMode].start();
+    } else if (eq.down.click() && curMode < modeCount - 1) {
+      curMode += 1;
+      drawMode();
+    } else if (eq.up.click() && curMode > 0) {
+      curMode -= 1;
+      drawMode();
+    }
+  } else {
+    if (eq.up.holding() && eq.down.holding() && eq.ok.holding()) {
+      readerModes[curMode].suspend();
+      choosing = true;
+      drawMode();
+    } else {
+      readerModes[curMode].tick();
+    }
+  }
+}
+
+void drawMode() {
+    eq.oled.clear();
+    eq.oled.home();
+    eq.oled.println(modeNames[curMode]);
+    eq.oled.update();
 }

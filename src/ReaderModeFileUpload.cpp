@@ -11,6 +11,9 @@ extern uint32_t batTimer;
 
 String upModeStr = "UPLOAD MODE";
 
+int preContrast;
+bool isSTA;
+
 // конструктор страницы
 void build() {
   GP.BUILD_END();
@@ -58,45 +61,93 @@ void action(GyverPortal& p) {       // Подсос значений со стр
     p.copyStr("staPass", sets.staPass);
     p.copyBool("staModeFlag", sets.staModeFlag);
 
-    byte con = map(sets.dispContrast, 10, 100, 1, 255);
-    eq.oled.setContrast(con);         // Тут же задаем яркость оледа
     EEPROM.put(1, sets);           // Сохраняем все настройки в EEPROM
     EEPROM.commit();               // Записываем
   }
 }
 
-void RMFileUploadStart() {
-  eq.oled.clear();
-  eq.oled.home();
-
-  drawStatus(upModeStr);
-
+void printNetInfo() {
+  eq.oled.clear(0, 16, 127, 63);
   eq.oled.setCursor(0, 2);
+
   if (sets.staModeFlag) {
     eq.oled.print("SSID: ");
     eq.oled.println(sets.staSSID);
-    eq.oled.print("Connecting");
-    eq.oled.update();
-    
-    WiFi.begin(sets.staSSID, sets.staPass);
-
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(1500);
-      eq.oled.print(".");
-      eq.oled.update();
-    }
+    eq.oled.print("PASS: ");
+    eq.oled.println(sets.staPass);
   } else {
     eq.oled.print("AP SSID: ");
     eq.oled.println(sets.apSSID);
-    eq.oled.println("Enabling AP");
-    eq.oled.update();
-    
-    WiFi.softAP(sets.apSSID, sets.apPass);
+    eq.oled.print("PASS: ");
+    eq.oled.println(sets.apPass);
   }
 
   eq.oled.println();
   eq.oled.print("IP: ");
   if (sets.staModeFlag) {
+        eq.oled.println(WiFi.localIP());
+  } else {
+        eq.oled.println(WiFi.softAPIP());
+  }
+  eq.oled.update();  
+}
+
+void RMFileUploadStart() {
+  preContrast = sets.dispContrast;
+  isSTA = sets.staModeFlag;
+  
+  if (isSTA) {
+    eq.oled.clear();
+    eq.oled.home();
+
+    drawStatus(upModeStr);
+      
+    eq.oled.setCursor(0, 2);
+
+    eq.oled.println("Connecting");
+    eq.oled.print("SSID: ");
+    eq.oled.println(sets.staSSID);
+    eq.oled.print("PASS: ");
+    eq.oled.println(sets.staPass);
+    eq.oled.update();
+
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(sets.staSSID, sets.staPass);
+
+    int i = 0;
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(1500);
+      eq.oled.print(".");
+      eq.oled.update();
+      ++i;
+      if (i > 9) {
+	isSTA = false;
+	break;
+      }
+    }
+  }
+  if (!isSTA) {
+    eq.oled.clear();
+    eq.oled.home();
+
+    drawStatus(upModeStr);
+    
+    eq.oled.setCursor(0, 2);
+
+    eq.oled.println("Enabling AP");
+    eq.oled.print("AP SSID: ");
+    eq.oled.println(sets.apSSID);
+    eq.oled.print("PASS: ");
+    eq.oled.println(sets.apPass);
+    eq.oled.update();
+
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(sets.apSSID, sets.apPass);
+  }
+
+  eq.oled.println();
+  eq.oled.print("IP: ");
+  if (isSTA) {
         eq.oled.println(WiFi.localIP());
   } else {
         eq.oled.println(WiFi.softAPIP());
@@ -116,9 +167,36 @@ void RMFileUploadTick() {
     drawStatus(upModeStr);
     batTimer = mi;
   }
+
+  if (eq.up.click() && preContrast < 100) {
+    preContrast += 10;
+    byte con = translateContrast(preContrast);
+    eq.oled.setContrast(con); // Тут же задаем яркость оледа
+  }
+  else if (eq.down.click() && preContrast > 10) {
+    preContrast -= 10;
+    byte con = translateContrast(preContrast);
+    eq.oled.setContrast(con); // Тут же задаем яркость оледа
+  } else if (eq.ok.hold(2)) {
+    sets.dispContrast = preContrast;
+    EEPROM.put(1, sets);
+    EEPROM.commit();
+    eq.oled.clear(0, 16, 127, 63);
+    eq.oled.setCursor(0, 2);
+    eq.oled.println("contrast saved!");
+    eq.oled.println(sets.dispContrast);
+    eq.oled.update();
+    delay(1000);
+    printNetInfo();
+  }
 }
 
 void RMFileUploadSuspend() {
   eq.ui.stop();
   WiFi.mode(WIFI_OFF);
+
+  if (sets.dispContrast != preContrast) {
+    byte con = translateContrast(preContrast);
+    eq.oled.setContrast(con); // Тут же задаем яркость оледа
+  }
 }

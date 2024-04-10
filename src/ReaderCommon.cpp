@@ -10,6 +10,8 @@ void drawStatus(String str) {
 
   eq.oled.print(str);
 
+  batMV = ESP.getVcc();
+  
   byte charge =  
       constrain( 
           map(   
@@ -37,3 +39,5 @@ void drawStatus(String str) {
   eq.oled.line(0, 10, 127, 10);
   eq.oled.update(0, 0, 127, 15);
 }
+
+int translateContrast(byte x) { return map(x, 10, 100, 1, 255); }

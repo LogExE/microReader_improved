@@ -11,3 +11,5 @@
 #define FOLDER_ROOT "/rdrfls"
 
 void drawStatus(String str);
+
+int translateContrast(byte x);
