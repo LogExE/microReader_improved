@@ -9,6 +9,7 @@
 
 #include "ReaderModeFileRead.h"
 #include "ReaderModeFileUpload.h"
+#include "ReaderModeTime.h"
 
 #define AP_DEFAULT_SSID "ReAdEr"
 #define AP_DEFAULT_PASS "00000000"
@@ -19,11 +20,12 @@
 
 #define IIC_SDA_PIN 4
 #define IIC_SCL_PIN 5
-#define EE_KEY 0x42
+#define EE_KEY 0x41
 #define _EB_DEB 25
 #define SCR_CONTRAST 100
 #define EEPROM_SIZE 125
 #define UNLOCK_PASS "000012"
+#define DEF_GMT 4
 
 ReaderEquipment eq = {
   GyverPortal(&LittleFS),
@@ -42,7 +44,9 @@ ReaderSettings sets = { // Структура со всеми настройка
 
     SCR_CONTRAST,
 
-    UNLOCK_PASS};
+    UNLOCK_PASS,
+    DEF_GMT
+};
 
 int batMV = 3000; // Напряжение питания ESP
 
@@ -73,11 +77,12 @@ bool choosing;
 
 ReaderMode readerModes[] = {
     {RMFileReadStart, RMFileReadTick, RMFileReadSuspend},
-    {RMFileUploadStart, RMFileUploadTick, RMFileUploadSuspend}
+    {RMFileUploadStart, RMFileUploadTick, RMFileUploadSuspend},
+    {RMTimeStart, RMTimeTick, RMTimeSuspend}
 };
 int modeCount = sizeof(readerModes) / sizeof(readerModes[0]);
 
-String modeNames[] = {"read files", "upload files"};
+String modeNames[] = {"read files", "upload files", "watch time"};
 
 void drawMode();
 

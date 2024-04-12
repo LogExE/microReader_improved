@@ -9,4 +9,5 @@ struct ReaderSettings
   bool staModeFlag;
   int dispContrast;
   char password[11];
+  int gmt;
 };

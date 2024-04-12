@@ -39,6 +39,7 @@ void build() {
       GP.BREAK();
       M_BOX(GP_CENTER, GP.LABEL("STA Enable"); GP.SWITCH("staModeFlag", sets.staModeFlag););
     );
+    M_BOX(GP_CENTER, GP.LABEL("Timezone"); GP.NUMBER("gmt", "GMT", sets.gmt););
     GP.FORM_END();                  // <- Конец формы (костыль)
     M_BLOCK_TAB(                    // Блок с OTA-апдейтом
       "ESP UPDATE",                 // Имя + тип DIV
@@ -47,6 +48,7 @@ void build() {
     M_BLOCK_TAB(                    // Блок с файловым менеджером
       "FILE MANAGER",               // Имя + тип DIV
       GP.FILE_UPLOAD("file_upl");   // Кнопка для загрузки файла
+      GP.FOLDER_UPLOAD("folder_upl");
       GP.FILE_MANAGER(&LittleFS);   // Файловый менеджер
     );
   );
@@ -60,6 +62,7 @@ void action(GyverPortal& p) {       // Подсос значений со стр
     p.copyStr("staSSID", sets.staSSID);
     p.copyStr("staPass", sets.staPass);
     p.copyBool("staModeFlag", sets.staModeFlag);
+    p.copyInt("gmt", sets.gmt);
 
     EEPROM.put(1, sets);           // Сохраняем все настройки в EEPROM
     EEPROM.commit();               // Записываем
