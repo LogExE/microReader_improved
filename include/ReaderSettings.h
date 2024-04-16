@@ -6,7 +6,6 @@ struct ReaderSettings
   char apPass[21];
   char staSSID[21];
   char staPass[21];
-  bool staModeFlag;
   int dispContrast;
   char password[11];
   int gmt;

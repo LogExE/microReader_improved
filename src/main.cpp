@@ -11,21 +11,26 @@
 #include "ReaderModeFileUpload.h"
 #include "ReaderModeTime.h"
 
+#define EE_KEY 0x40 // поставьте другое значение, чтобы настройки сбросились
+
 #define AP_DEFAULT_SSID "ReAdEr"
 #define AP_DEFAULT_PASS "00000000"
-#define STA_DEFAULT_SSID "slowashell"
-#define STA_DEFAULT_PASS "brutesomebacon"
 
-#define STA_CONNECT_EN 0
+#define STA_DEFAULT_SSID "slowashell" // да, это настоящие данные моей сети)
+#define STA_DEFAULT_PASS "brutesomebacon" // возможно, стоит их теперь поменять...
+
+#define SCR_CONTRAST 100
+#define UNLOCK_PASS "000012" // пароль для читалки, пока нигде не используется
+#define DEF_GMT 4 // часовой пояс для режима часов
+
+#define EEPROM_SIZE 125
 
 #define IIC_SDA_PIN 4
 #define IIC_SCL_PIN 5
-#define EE_KEY 0x41
+
 #define _EB_DEB 25
-#define SCR_CONTRAST 100
-#define EEPROM_SIZE 125
-#define UNLOCK_PASS "000012"
-#define DEF_GMT 4
+#define HOLD_TIME 1500
+
 
 ReaderEquipment eq = {
   GyverPortal(&LittleFS),
@@ -37,20 +42,15 @@ ReaderEquipment eq = {
 
 ReaderSettings sets = { // Структура со всеми настройками
     AP_DEFAULT_SSID,  AP_DEFAULT_PASS,
-
     STA_DEFAULT_SSID, STA_DEFAULT_PASS,
-
-    STA_CONNECT_EN,
-
     SCR_CONTRAST,
-
     UNLOCK_PASS,
     DEF_GMT
 };
 
 int batMV = 3000; // Напряжение питания ESP
 
-uint32_t batTimer = STATUS_TIMEMIN; // Таймер опроса АКБ
+uint32_t batTimer = STATUS_TIME_MIN; // Таймер опроса АКБ
 
 ADC_MODE(ADC_VCC); // Режим работы АЦП - измерение VCC
 
@@ -76,13 +76,11 @@ int curMode;
 bool choosing;
 
 ReaderMode readerModes[] = {
-    {RMFileReadStart, RMFileReadTick, RMFileReadSuspend},
-    {RMFileUploadStart, RMFileUploadTick, RMFileUploadSuspend},
-    {RMTimeStart, RMTimeTick, RMTimeSuspend}
+  {"read files", RMFileReadStart, RMFileReadTick, RMFileReadSuspend},
+  {"upload files", RMFileUploadStart, RMFileUploadTick, RMFileUploadSuspend},
+  {"watch time", RMTimeStart, RMTimeTick, RMTimeSuspend}
 };
 int modeCount = sizeof(readerModes) / sizeof(readerModes[0]);
-
-String modeNames[] = {"read files", "upload files", "watch time"};
 
 void drawMode();
 
@@ -90,7 +88,9 @@ void ReaderStart();
 void ReaderTick();
 
 void setup() {
-  eq.ok.setHoldTimeout(1500); // Длинное удержание кнопки ОК - 1.5 секунды
+  eq.down.setHoldTimeout(HOLD_TIME);
+  eq.ok.setHoldTimeout(HOLD_TIME);
+  eq.up.setHoldTimeout(HOLD_TIME);
 
   initOled();
 
@@ -107,8 +107,7 @@ void setup() {
   eq.oled.println();
   eq.oled.println("enjoy :)");
   eq.oled.update();
-
-  delay(2000);
+  delay(1000);
   
   ReaderStart();
 }
@@ -154,6 +153,6 @@ void ReaderTick() {
 void drawMode() {
     eq.oled.clear();
     eq.oled.home();
-    eq.oled.println(modeNames[curMode]);
+    eq.oled.println(readerModes[curMode].name);
     eq.oled.update();
 }

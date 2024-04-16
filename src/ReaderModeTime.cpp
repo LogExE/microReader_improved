@@ -23,7 +23,7 @@ void RMTimeStart() {
   while (WiFi.status() != WL_CONNECTED) {
     eq.oled.print(".");
     eq.oled.update();
-    delay(500);
+    delay(1500);
   }
 
   gntp.setGMT(sets.gmt);

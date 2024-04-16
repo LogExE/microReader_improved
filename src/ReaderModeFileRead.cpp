@@ -129,7 +129,7 @@ void exitFile() {
   curState = MENU;
   drawMenu();
   
-  batTimer = STATUS_TIMEMIN;
+  batTimer = STATUS_TIME_MIN;
 }
 
 void drawMenu() {
