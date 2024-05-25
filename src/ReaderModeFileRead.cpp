@@ -34,7 +34,6 @@ int lastPage;
 File curFile;
 
 void drawMenu();
-void drawStatus();
 
 void drawText();
 void drawPic();

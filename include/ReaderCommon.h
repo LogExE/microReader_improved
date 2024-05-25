@@ -7,7 +7,7 @@
 #define VBAT_EMPTY_MV 2600 // Напряжение питания при севшем аккуме в (мВ)
 #define STATUSBAR_TIME 5000
 #define STATUS_TIME_MIN 0
-#define FOLDER_ROOT "/rdrfls" 
+#define FOLDER_ROOT "/" 
 
 void drawStatus(String str);
 

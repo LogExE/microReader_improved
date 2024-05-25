@@ -11,13 +11,13 @@
 #include "ReaderModeFileUpload.h"
 #include "ReaderModeTime.h"
 
-#define EE_KEY 0x40 // поставьте другое значение, чтобы настройки сбросились
+#define EE_KEY 0x69 // поставьте другое значение, чтобы настройки сбросились
 
 #define AP_DEFAULT_SSID "ReAdEr"
 #define AP_DEFAULT_PASS "00000000"
 
-#define STA_DEFAULT_SSID "slowashell" // да, это настоящие данные моей сети)
-#define STA_DEFAULT_PASS "brutesomebacon" // возможно, стоит их теперь поменять...
+#define STA_DEFAULT_SSID "<nonexistant>"
+#define STA_DEFAULT_PASS "12345678"
 
 #define SCR_CONTRAST 100
 #define UNLOCK_PASS "000012" // пароль для читалки, пока нигде не используется
