@@ -48,6 +48,8 @@ void RMFileReadStart() {
   Dir root = LittleFS.openDir(FOLDER_ROOT);
   fileCnt = 0;
   for (int i = 0; root.next(); ++i) {
+    if (root.isDirectory())
+      continue;
     fileNames[i] = root.fileName();
     ++fileCnt;
   }

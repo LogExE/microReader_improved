@@ -44,7 +44,6 @@ void build() {
       M_BLOCK_TAB(        // Блок с файловым менеджером
           "FILE MANAGER", // Имя + тип DIV
           GP.FILE_UPLOAD("file_upl"); // Кнопка для загрузки файла
-          GP.FOLDER_UPLOAD("folder_upl");
           GP.FILE_MANAGER(&LittleFS); // Файловый менеджер
       ););
   GP.BUILD_END(); // Конец билда страницы
